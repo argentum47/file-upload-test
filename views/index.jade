@@ -1,0 +1,40 @@
+extends layout
+
+block content
+  h1= title
+  .container
+    #navbar
+      ul.list-inline
+        li
+          a(href="#signup") Signup
+        li
+          a(href="#login") Login
+        li
+          a(href="#users") Users
+        li
+          a(href="#upload") Upload
+    #welcome
+      h3 Hey Brah
+    #signup
+      h1 Signup
+      form#userForm
+        input(type="text" id="firstName" placeholder="FirstName" required="true")
+        input(type="text" id="lastName" placeholder="LastName")
+        input(type="email" id="email" placeholder="joh@doe.com" required="true")
+        input(type="password" id="password" placeholder="password" required="true")
+        input(type="submit" value="Save User")
+
+    #login
+      h1 Login
+      form#loginForm
+        input(type="text" id="loginEmail" placeholder="a@b.c")
+        input(type="password" id="loginPassword" placeholder="password")
+        input(type="submit" value="login")
+    #users
+      h1 Users
+      #content
+    #upload
+      h1 Upload
+      form#uploadForm
+        input(type="file" id="files" multiple="true")
+        input(type="submit" value="Upload")
