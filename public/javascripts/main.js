@@ -16,7 +16,7 @@
       return new Promise(function(res, rej){
         var xhr = new XMLHttpRequest;
         xhr.open(options.method, url, true);
-        if(!options.contentType == 'multipart')
+        if(options.contentType != 'multipart')
         xhr.setRequestHeader("Content-type", options.contentType || "application/x-www-form-urlencoded");
         xhr.onreadystatechange = function() {
           if(xhr.status < 400 && xhr.readyState === 4)
@@ -31,7 +31,7 @@
     }
   }
 
-  return Object.assign(window, dom)
+  return Object.assign(global, dom)
 })(window)
 
 
@@ -81,7 +81,7 @@ var Router = {
       handler = re;
       re = '';
     }
-    this.routes.push({ re: re, handler: handler});
+    this.routes.push({ re: re, handler: handler });
     return this;
   },
 
@@ -100,45 +100,59 @@ var Router = {
     var current = that.getFragment();
     
     var fn = function() {
-      if(current !== that.getFragment()) {
-        current = that.getFragment();
-        that.check(current);
-      }
+      current = that.getFragment();
+      that.check(current);
     };
 
-    clearInterval(this.interval);
-    this.interval = setInterval(fn, 500);
+    window.addEventListener('hashchange', fn);
     return this;
   }
 };
 
-var Template = {
-  re: /{([^}]+)?}/g,
-  get: function get (url, data) {
-    return fetch(url, {method: 'GET'})
-      .then(function(resp) {
-        // var match;
-        // while(match = that.re.exec(resp)) {
-        //   resp.replace(match[0], data[match[1]].toString())
-        // }
-        var parser = new DOMParser();
-        var dom = parser.parseFromString(resp, 'text/html');
-        return dom.body.childNodes[0];
-      })
-  },
-  render: function render (parent, node, append) {
-    if(!append) {
-      (parent || document.body).innerHTML = '';
-    }
-    (parent || document.body).appendChild(document.importNode(node, true));
+function tmpl(url, data) {
+  var re = /<%([^%>]+)?%>/g;
+  return fetch(url, { method: 'GET' })
+    .then(function (resp) {
+      resp = resp.replace(/[\n\r\t]/g, '');
+
+      if(data) {
+        var cursor = 0, code = 'var r = [];\n', match;
+        var rexJS = /^\s+?(if|for|else|switch|case|break|{|})/g
+        var add = function (line, js) {
+          if(js)
+            code += rexJS.test(line) ? line +'\n' : 'r.push(' + line + ');'
+          else
+            code += 'r.push("'+ line.replace(/"/g, '\\"') +'");\n';
+        };
+
+        while(match = re.exec(resp)) {
+          add(resp.slice(cursor, match.index));
+          add(match[1], true);
+          cursor = match.index + match[0].length;
+        }
+        add(resp.substr(cursor, resp.length - cursor));
+        code += 'return r.join("")';
+        resp = new Function(code.replace(/[\r\t\n]/g, '')).apply(data);
+      }
+      console.log(resp)
+      
+      return resp;
+    });
+}
+
+tmpl.render = function (parent, html, append) {
+  if(!append) {
+    (parent || document.body).innerHTML = '';
   }
+  (parent || document.body).innerHTML += html;
 };
 
 
 var Navbar = Object.create(HTMLElement.prototype);
-Navbar.createdCallback =  function createdCallback () {
-  var shadow = this.createShadowRoot();
-  var style = ['<style>',
+
+function renderNavbarShadowDom(dList) {
+  var that = this;
+  this.templateStyle = ['<style>',
                ' .list-inline li {',
                     'display: inline-block;',
                     'padding: 5px 7px;',
@@ -148,115 +162,109 @@ Navbar.createdCallback =  function createdCallback () {
                   '}',
               '</style>'].join('');
 
-  var html = '<ul class=list-inline>';
-
-  var dList = JSON.parse(this.dataset.list);
+  this.list = '';
 
   dList.forEach(function (el) {
-    html += '<li><a href="#' + el + '">' + el +'</a></li>';
+    that.list += '<li><a href="#' + el + '">' + el +'</a></li>';
   });
-
-  shadow.innerHTML = style + html;
 }
+
+Navbar.createdCallback =  function() {
+  renderNavbarShadowDom.call(this, JSON.parse(this.dataset.list));
+  this.shadow = this.createShadowRoot();
+  this.shadow.innerHTML = this.templateStyle + '<ul class=list-inline>' + this.list + '</ul>';
+};
+
+Navbar.attributeChangedCallback = function(_, _old, newList) {
+  renderNavbarShadowDom.call(this, JSON.parse(newList));
+  this.shadow.innerHTML = this.templateStyle + '<ul class=list-inline>' + this.list + '</ul>';
+};
+
 document.registerElement('nav-bar', { prototype: Navbar })
 
+document.addEventListener('DOMContentLoaded', function() {
+  Router.check();
+});
+
 Router.config()
+  .add('/', function() {
+    tmpl('/templates/welcome.html')
+      .then(function(html) { tmpl.render($("main"), html); })
+  })
   .add('/signup', function() {
     if(localStorage.getItem('user'))
       return;
-    Template.get('/templates/signup.html')
-      .then(function(dom) {
-        Template.render($("main"), dom)
+    tmpl('/templates/signup.html')
+      .then(function(html) {
+        tmpl.render($("main"), html);
+        $('#userForm').onsubmit = function(e) {
+          e.preventDefault()
+          var fN = $("#firstName").value,
+          lN = $("#lastName").value,
+          em = $("#email").value,
+          pS = $("#password").value;
+
+          fetch('/users/create', {
+            method: 'POST',
+            data: { firstName: fN, lastName: lN, email: em, password: pS }
+          }).then(function(data) {
+            localStorage.setItem("user", data);
+            $('nav-bar').dataset.list = $('nav-bar').dataset.list.push('logout');
+          })
+        }
       })
   })
   .add('/login', function() {
     if(localStorage.getItem('user'))
       return;
-    Template.get('/templates/login.html')
-     .then(function(dom) {
-        Template.render($("main"), dom);
+    tmpl('/templates/login.html')
+      .then(function(html) {
+         tmpl.render($("main"), html);
+         $("#loginForm").onsubmit = function (e) {
+          e.preventDefault();
+          var em = $("#loginEmail").value,
+          pS = $("#loginPassword").value;
+
+          fetch('/users/login', {
+            method: 'POST',
+            data: { email: em, password: pS }
+          }).then(function (data) {
+            localStorage.setItem('user', data);
+            var list = JSON.parse($('nav-bar').dataset.list);
+            list.push('logout');
+            list.splice(list.indexOf('signup'), 1);
+            list.splice(list.indexOf('login'), 1);
+            $('nav-bar').dataset.list = JSON.stringify(list);
+            Router.check('/users')
+          })
+        }
       })
   })
   .add('/users', function() {
-
+    fetch('/users', {}).then(function(data) {
+      var data = JSON.parse(data);
+      tmpl('/templates/users.html', data.users)
+        .then(function(html) { 
+          tmpl.render($("main"), html);
+        });
+    });
   })
   .add('/upload', function() {
 
   })
-  .add('/logout', function() {})
+  .add('/logout', function() {
+    localStorage.removeItem('user');
+    var list = JSON.parse($('nav-bar').dataset.list);
+
+    if(list.indexOf('logout') >= 0)
+      list.splice(list.indexOf('logout'), 1);
+    if(list.indexOf('login') < 0)
+      list.unshift('login');
+    if(list.indexOf('signup') < 0)
+      list.unshift('signup');
+    $('nav-bar').dataset.list = JSON.stringify(list);
+  })
   .listen()
-
-
-function makeLogout() {
-  var li = document.createElement('li');
-  var a = document.createElement('a');
-
-  a.href="#logout";
-  a.textContent = "Logout";
-  li.id = "logout";
-  li.appendChild(a);
-  return li;
-}
-
-function toggleLoginSignup () {
-  $("#navbar ul").querySelector('a[href="#login"]').parentNode.remove();
-  $("#navbar ul").querySelector('a[href="#signup"]').parentNode.remove();
-}
-
-
-// document.addEventListener('DOMContentLoaded', function() {
-//   if(localStorage.getItem('user')) {
-//     $("#navbar ul").appendChild(makeLogout())
-    
-//   } else {
-//     if($("#logout")) $("#logout").remove()
-//   }
-
-//   $('#userForm').onsubmit = function(e) {
-//     e.preventDefault()
-//     var fN = $("#firstName").value,
-//         lN = $("#lastName").value,
-//         em = $("#email").value,
-//         pS = $("#password").value;
-
-//     fetch('/users/create', {
-//       method: 'POST',
-//       data: { firstName: fN, lastName: lN, email: em, password: pS }
-//     }).then(function(data) {
-//       localStorage.setItem("user", data);
-//       $("#navbar ul").appendChild(makeLogout())
-//     })
-//   }
-
-//   $("#loginForm").onsubmit = function (e) {
-//     e.preventDefault();
-//     var em = $("#loginEmail").value,
-//        pS = $("#loginPassword").value;
-
-//     fetch('/users/login', {
-//       method: 'POST',
-//       data: { email: em, password: pS }
-//     }).then(function (data) {
-//       localStorage.setItem('user', data);
-//       $("#navbar ul").appendChild(makeLogout())
-//     })
-//   }
-
-//   $("a[href='#users']").onclick = function () {
-//     fetch('/users', {}).then(function(data) {
-//       var data = JSON.parse(data);
-
-//       if(data.users.length) {
-//         var html = '<ul class=list-unstyled>';
-//         data.users.map(function(user) {
-//           html += '<li><a href="#user/' + user._id +'">' + user.firstName + ' ' + user.lastName + '</a></li>';
-//         })
-//         html += '</ul>';
-
-//         $("#content").innerHTML = html;
-//       }
-//     });
-//   }
 
 //   $("#uploadForm").onsubmit = function(e) {
 //     e.preventDefault();
@@ -276,13 +284,3 @@ function toggleLoginSignup () {
 //       })
 //     }
 //   }
-
-//   $(".container").onclick = function(e) {
-//     if(e.target.closest('#logout')) {
-//       localStorage.removeItem('user');
-//       if($("#logout")) {
-//         $('#logout').remove();
-//       }
-//     }
-//   }
-// });

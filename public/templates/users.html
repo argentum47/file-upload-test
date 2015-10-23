@@ -1,4 +1,10 @@
 <div id="users">
   <h1>Users</h1>
-  <div id="content"></div>
+  <div id="content">
+  <ul class="list-unstyled">
+    <% for(var i = 0, l = this.length; i < l ; i++) { %>
+      <li id=<% this[i]._id %>> <% this[i].firstName + ' ' + this[i].lastName%></li>
+    <% } %>
+  </ul>
+  </div>
 </div>
