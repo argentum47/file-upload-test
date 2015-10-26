@@ -1,0 +1,29 @@
+siege -b -t20s http://localhost:3000
+
+Transactions:           1364 hits
+Availability:         100.00 %
+Elapsed time:          19.39 secs
+Data transferred:         0.40 MB
+Response time:            0.21 secs
+Transaction rate:        70.35 trans/sec
+Throughput:           0.02 MB/sec
+Concurrency:           14.86
+Successful transactions:        1364
+Failed transactions:             0
+Longest transaction:          2.03
+Shortest transaction:         0.16
+
+
+Transactions:           3259 hits
+Availability:         100.00 %
+Elapsed time:          19.57 secs
+Data transferred:         0.96 MB
+Response time:            0.09 secs
+Transaction rate:       166.53 trans/sec
+Throughput:           0.05 MB/sec
+Concurrency:           14.95
+Successful transactions:        3259
+Failed transactions:             0
+Longest transaction:          1.99
+Shortest transaction:         0.02
+ 

@@ -1,0 +1,10 @@
+{
+	"name":"timepass",
+	"version": "0.0.1",
+	"scripts": {
+		"start": "nodemon main.js"
+	},
+	"dependencies": {
+		"chalk": "*"
+	}
+}

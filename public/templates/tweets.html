@@ -1,0 +1,14 @@
+<h1>Tweets</h1>
+<div id="tweeter">
+  <form id="tweetForm">
+    <textarea id="tweetText"> not more that 200 characters</textarea>
+    <input type="submit" value="tweet"/>
+  </form>
+  <br/>
+  <hr/>
+  <div id="tweets">
+    <% for(var i = 0, l = this.tweets.length, tweet; i < l, tweet = this.tweets[i]; i++) { %>
+      <% tweet.text %> by <% this.users[tweet.userId].email %>
+    <% } %>
+  </div>
+</div>

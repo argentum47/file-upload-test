@@ -249,8 +249,22 @@ Router.config()
         });
     });
   })
-  .add('/upload', function() {
+  .add('/tweets', function() {
+    fetch('/blogs', {}).then(function(data) {
+      tmpl('/templates/tweets.html', JSON.parse(data))
+        .then(function(html) { 
+          tmpl.render($("main"), html);
 
+          $("#tweetForm").onsubmit = function(e) {
+            e.preventDefault();
+            var text = $("#tweetText").value;
+            fetch('/blogs/create', {
+              method: 'POST',
+              data: { text: text }
+            })
+          }
+        });
+    })
   })
   .add('/logout', function() {
     localStorage.removeItem('user');

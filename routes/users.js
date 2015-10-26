@@ -24,8 +24,10 @@ router.post('/create', function (req, res, next) {
   User.create(user, function(err, u) {
     console.log(err, u)
     if(err) next(err);
-    else
+    else {
+      req.session.userId = u._id;
       res.send({id: u._id, email: u.email, name: u.firstName + ' ' + u.lastName })
+    }
   })
 });
 
@@ -33,8 +35,10 @@ router.post('/login', function(q, s, n) {
   var user = { email: q.body.email, password: q.body.password };
   User.findOne({ email: user.email })
     .then(function (u) {
-      if(u.authenticate(user.password))
+      if(u.authenticate(user.password)) {
+        q.session.userId = u._id;
         s.send({ id: u._id, email: u.email, name: u.firstName + ' ' + u.lastName })
+      }
       else {
         throw Error('NOT_FOUND')
       }
