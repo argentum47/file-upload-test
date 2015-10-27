@@ -1,7 +1,10 @@
 ##testing file upload with multer and express in nodejs
 
 ##running
-is straight forward `npm install && npm start`
+1. is straight forward `npm install && npm start`
+2. and then comes the nginx part, make sure youu have nginx installed.
+3. copy the configuration to `/etc/nginx/sites-available/` and symlink to `/etc/nginx/sites-available/`
+4. you could use whatever servername you prefer,if tested locally add it to /etc/hosts or dnsmasq and restart nginx
 
 ##problems faced
 (includes the parts where I am a moron)

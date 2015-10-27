@@ -46,7 +46,7 @@ var Router = {
     else
       this.mode = 'hash';
     this.root = options && options.root ? '/' + this.clearSlashes(options.root) + '/' : this.root;
-    
+
     return this;
   },
 
@@ -98,7 +98,7 @@ var Router = {
   listen: function listen () {
     var that = this;
     var current = that.getFragment();
-    
+
     var fn = function() {
       current = that.getFragment();
       that.check(current);
@@ -135,7 +135,7 @@ function tmpl(url, data) {
         resp = new Function(code.replace(/[\r\t\n]/g, '')).apply(data);
       }
       console.log(resp)
-      
+
       return resp;
     });
 }
@@ -188,13 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 Router.config()
   .add('/', function() {
-    tmpl('/templates/welcome.html')
+    tmpl('./templates/welcome.html')
       .then(function(html) { tmpl.render($("main"), html); })
   })
   .add('/signup', function() {
     if(localStorage.getItem('user'))
       return;
-    tmpl('/templates/signup.html')
+    tmpl('./templates/signup.html')
       .then(function(html) {
         tmpl.render($("main"), html);
         $('#userForm').onsubmit = function(e) {
@@ -217,7 +217,7 @@ Router.config()
   .add('/login', function() {
     if(localStorage.getItem('user'))
       return;
-    tmpl('/templates/login.html')
+    tmpl('./templates/login.html')
       .then(function(html) {
          tmpl.render($("main"), html);
          $("#loginForm").onsubmit = function (e) {
@@ -243,16 +243,16 @@ Router.config()
   .add('/users', function() {
     fetch('/users', {}).then(function(data) {
       var data = JSON.parse(data);
-      tmpl('/templates/users.html', data.users)
-        .then(function(html) { 
+      tmpl('./templates/users.html', data.users)
+        .then(function(html) {
           tmpl.render($("main"), html);
         });
     });
   })
   .add('/tweets', function() {
     fetch('/blogs', {}).then(function(data) {
-      tmpl('/templates/tweets.html', JSON.parse(data))
-        .then(function(html) { 
+      tmpl('./templates/tweets.html', JSON.parse(data))
+        .then(function(html) {
           tmpl.render($("main"), html);
 
           $("#tweetForm").onsubmit = function(e) {
